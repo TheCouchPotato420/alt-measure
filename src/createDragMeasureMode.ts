@@ -145,7 +145,6 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       // OBR.player.deselect();
     },
     onKeyDown: async (_, event) => {
-      console.log(event.key);
       if (itemInteraction || true) {
         if (event.key === "z" || event.key === "Z") {
           // Add segment
