@@ -145,8 +145,9 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       // OBR.player.deselect();
     },
     onKeyDown: async (_, event) => {
+      console.log(event.key);
       if (itemInteraction || true) {
-        if (event.code === "KeyZ") {
+        if (event.key === "z" || event.key === "Z") {
           // Add segment
           rulerPoints.push(
             await calculateSegmentEndPosition(
@@ -157,14 +158,17 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
           );
         }
 
-        if (event.code === "KeyX" && rulerPoints.length > 1) {
+        if (
+          (event.key === "x" || event.key === "X") &&
+          rulerPoints.length > 1
+        ) {
           // Remove most recent segment
           rulerPoints.pop();
           // Refresh with segment removed
           updateToolItems(true);
         }
 
-        if (event.code === "Enter") {
+        if (event.key === "Enter") {
           // Run final update
           const items = await updateToolItems();
           await updateInteractionTargetItems(pointerPosition);
