@@ -17,6 +17,7 @@ export async function calculateDisplayDistance(
       }
       scaledDistance = distance * grid.scale.parsed.multiplier;
     } else if (grid.measurement === "ALTERNATING") {
+      let diagonalsCount = 0;
       for (let i = 1; i < points.length; i++) {
         const vertical = Math.abs(
           Math.round((points[i].y - points[i - 1].y) / grid.dpi)
@@ -26,9 +27,10 @@ export async function calculateDisplayDistance(
         );
         const longEdge = Math.max(vertical, horizontal);
         const shortEdge = Math.min(vertical, horizontal);
-        const diagonalCost = Math.floor(shortEdge * 0.5);
-        distance += longEdge + diagonalCost;
+        distance += longEdge;
+        diagonalsCount += shortEdge;
       }
+      distance += Math.floor(diagonalsCount * 0.5);
       scaledDistance = distance * grid.scale.parsed.multiplier;
     } else if (grid.measurement === "EUCLIDEAN") {
       for (let i = 1; i < points.length; i++) {
