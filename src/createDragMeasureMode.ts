@@ -95,21 +95,18 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
 
         [itemInteraction, sharedAttachments, localAttachments] =
           await Promise.all([
-            OBR.interaction.startItemInteraction(
-              [
-                ...(await buildRuler(
-                  rulerIds,
-                  grid,
-                  player,
-                  startPosition,
-                  await snapPosition(grid, pointerPosition),
-                  token.visible,
-                  false
-                )),
-                token,
-              ],
-              false
-            ),
+            OBR.interaction.startItemInteraction([
+              ...(await buildRuler(
+                rulerIds,
+                grid,
+                player,
+                startPosition,
+                await snapPosition(grid, pointerPosition),
+                token.visible,
+                false
+              )),
+              token,
+            ]),
             OBR.scene.items.getItemAttachments([token.id]),
             OBR.scene.local.getItemAttachments([token.id]),
           ]);
@@ -129,8 +126,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
               pointerPosition,
               true,
               true
-            ),
-            false
+            )
           ),
         ]);
       }
