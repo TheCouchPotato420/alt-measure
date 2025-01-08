@@ -1,5 +1,10 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { CLEAR_RULERS_ACTION_ID, SHORT_ID_PREFIX, TOOL_ID } from "./idStrings";
+import {
+  CLEAR_RULERS_ACTION_ID,
+  getItemId,
+  SHORT_ID_PREFIX,
+  TOOL_ID,
+} from "./idStrings";
 import { deleteActionIcon } from "./icons";
 import { Player } from "./types";
 
@@ -10,7 +15,7 @@ export function createClearRulersAction(player: Player) {
       icons: [
         {
           icon: deleteActionIcon,
-          label: "Clear Rulers",
+          label: "Clear All Rulers",
           filter: {
             activeTools: [TOOL_ID],
           },
@@ -28,6 +33,34 @@ export function createClearRulersAction(player: Player) {
       },
     });
   } else {
-    OBR.tool.removeAction(CLEAR_RULERS_ACTION_ID);
+    OBR.tool.createAction({
+      id: CLEAR_RULERS_ACTION_ID,
+      icons: [
+        {
+          icon: deleteActionIcon,
+          label: "Clear My Ruler",
+          filter: {
+            activeTools: [TOOL_ID],
+          },
+        },
+      ],
+      onClick: async () => {
+        const items = await OBR.scene.items.getItems(
+          item => item.layer === "RULER"
+        );
+        const deleteList: string[] = [];
+        for (let item of items) {
+          if (item.id === getItemId("line", player.id))
+            deleteList.push(item.id);
+          if (item.id === getItemId("label", player.id))
+            deleteList.push(item.id);
+          if (item.id === getItemId("end-point", player.id))
+            deleteList.push(item.id);
+          if (item.id === getItemId("background", player.id))
+            deleteList.push(item.id);
+        }
+        OBR.scene.items.deleteItems(deleteList);
+      },
+    });
   }
 }
