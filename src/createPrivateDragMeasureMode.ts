@@ -99,7 +99,7 @@ export function createPrivateDragMeasureMode(grid: Grid, player: Player) {
     },
     onKeyDown: async (_, event) => {
       if (dragStarted) {
-        if (event.code === "KeyZ") {
+        if (event.key === "z" || event.key === "Z") {
           // Add segment
           rulerPoints.push(
             await calculateSegmentEndPosition(
@@ -110,7 +110,10 @@ export function createPrivateDragMeasureMode(grid: Grid, player: Player) {
           );
         }
 
-        if (event.code === "KeyX" && rulerPoints.length > 1) {
+        if (
+          (event.key === "x" || event.key === "X") &&
+          rulerPoints.length > 1
+        ) {
           // Remove most recent segment
           rulerPoints.pop();
           // Refresh with segment removed
