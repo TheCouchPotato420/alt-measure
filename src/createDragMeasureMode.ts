@@ -190,8 +190,21 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       }
     },
     onToolDragEnd: async (_, event) => {
-      await updateToolItems();
+      // Run final update
+      const items = await updateToolItems();
       await updateInteractionTargetItems(event.pointerPosition);
+
+      // Add ruler to the scene
+      const ruler: Item[] = [];
+      for (let rulerId of Object.values(rulerIds)) {
+        for (let item of items) {
+          if (item.id === rulerId) {
+            ruler.push(item);
+            break;
+          }
+        }
+      }
+      OBR.scene.items.addItems(ruler);
 
       expireAllInteractions();
       stopExpiredInteractions();

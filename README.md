@@ -23,8 +23,7 @@ Install link: https://owlbear-measure.onrender.com/manifest.json
 **Finishing a measurement**
 
 - Press **escape** to cancel the measurement and return the token to its initial position
-- Release the token to move it to the current position
-- Press **enter** to make the ruler permanent and move the token to the current position
+- Release the token or press **enter** to make the ruler permanent and move the token to the current position
 
 **Making a private measurement**
 
