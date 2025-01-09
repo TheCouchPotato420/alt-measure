@@ -137,7 +137,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
                 player,
                 [...rulerPoints, endPointPosition],
                 endPointItem.visible,
-                false
+                true
               )),
               endPointItem,
             ]),
