@@ -13,13 +13,10 @@ export async function buildRuler(
   rulerIds: RulerIds,
   grid: Grid,
   player: Player,
-  startPosition: Vector2,
-  pointerPosition: Vector2,
+  points: Vector2[],
   visible: boolean,
   endDot: boolean
 ): Promise<Item[]> {
-  const points = [startPosition, pointerPosition];
-
   const rulerConstituentItems: any[] = [];
 
   rulerConstituentItems.push(
@@ -42,11 +39,11 @@ export async function buildRuler(
     buildLabel()
       .id(rulerIds.label)
       .attachedTo(rulerIds.line)
-      .position(getLabelPosition(grid, pointerPosition))
+      .position(getLabelPosition(grid, points[points.length - 1]))
       .plainText(await calculateDisplayDistance(grid, points))
       // .fontFamily("Times New Roman")
       .pointerHeight(0)
-      .backgroundOpacity(0.7)
+      .backgroundOpacity(1)
       .visible(visible)
       .layer("RULER")
       .zIndex(10004)
@@ -60,7 +57,7 @@ export async function buildRuler(
         .id(rulerIds.endDot)
         .attachedTo(rulerIds.line)
         .layer("RULER")
-        .position(pointerPosition)
+        .position(points[points.length - 1])
         .shapeType("CIRCLE")
         .fillColor(player.color)
         .strokeColor("white")

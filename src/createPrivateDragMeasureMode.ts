@@ -82,8 +82,7 @@ export function createPrivateDragMeasureMode(grid: Grid, player: Player) {
           rulerIds,
           grid,
           player,
-          startPosition,
-          await snapPosition(grid, pointerPosition),
+          [startPosition, await snapPosition(grid, pointerPosition)],
           true,
           true
         )
