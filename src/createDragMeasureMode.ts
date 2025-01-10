@@ -22,6 +22,7 @@ import { buildRuler } from "./rulerBuilder";
 export function createDragMeasureMode(grid: Grid, player: Player) {
   let itemInteraction: InteractionManager<Item[]> | null = null;
   let dragStarted = false;
+  let currentRulerInitTime = 0;
   let interactionIsExpired = false;
 
   // Set flags to reset interactions
@@ -59,6 +60,8 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
   };
 
   const createRulerInteractions = async (event: ToolEvent) => {
+    const initTime = Date.now();
+    currentRulerInitTime = initTime;
     pointerPosition = event.pointerPosition;
     dragStarted = true;
     OBR.scene.items.deleteItems(Object.values(rulerIds));
@@ -111,12 +114,14 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
     // Because this function is asynchronous and contains await statements, interactions
     // may already be expired if the drag was short enough in duration
     stopExpiredInteractions();
+
+    setTimeout(() => {
+      recreateRulerInteractions(initTime);
+    }, 700);
   };
 
-  const recreateRulerInteractions = async () => {
-    if (dragStarted === true) {
-      // Delete current ruler
-
+  const recreateRulerInteractions = async (initTime: number) => {
+    if (dragStarted && currentRulerInitTime === initTime) {
       let newItemInteraction: InteractionManager<Item[]> | null = null;
       rulerIds.label = getItemId("label", player.id) + Math.random();
 
@@ -165,15 +170,12 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       dragStarted = true;
       itemInteraction = newItemInteraction;
 
-      // Because this function is asynchronous and contains await statements, interactions
-      // may already be expired if the drag was short enough in duration
-      stopExpiredInteractions();
-
       // Call again after delay
       setTimeout(() => {
-        recreateRulerInteractions();
-      }, 500);
+        recreateRulerInteractions(initTime);
+      }, 700);
     }
+    stopExpiredInteractions();
   };
 
   OBR.tool.createMode({
@@ -199,15 +201,8 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       },
       { cursor: "crosshair" },
     ],
-    onToolClick: () => {
-      console.log("click");
-      return true;
-    },
     onToolDragStart: async (_, event) => {
       createRulerInteractions(event);
-      setTimeout(() => {
-        recreateRulerInteractions();
-      }, 500);
     },
     onToolDragMove: (_, event) => {
       pointerPosition = event.pointerPosition;
