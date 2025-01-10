@@ -60,8 +60,8 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
   };
 
   const createRulerInteractions = async (event: ToolEvent) => {
-    const initTime = Date.now();
-    currentRulerInitTime = initTime;
+    const rulerInitTime = Date.now();
+    currentRulerInitTime = rulerInitTime;
     pointerPosition = event.pointerPosition;
     dragStarted = true;
     OBR.scene.items.deleteItems(Object.values(rulerIds));
@@ -116,12 +116,12 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
     stopExpiredInteractions();
 
     setTimeout(() => {
-      recreateRulerInteractions(initTime);
+      recreateRulerInteractions(rulerInitTime);
     }, 700);
   };
 
-  const recreateRulerInteractions = async (initTime: number) => {
-    if (dragStarted && currentRulerInitTime === initTime) {
+  const recreateRulerInteractions = async (parentRulerInitTime: number) => {
+    if (dragStarted && currentRulerInitTime === parentRulerInitTime) {
       let newItemInteraction: InteractionManager<Item[]> | null = null;
       rulerIds.label = getItemId("label", player.id) + Math.random();
 
@@ -172,7 +172,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
 
       // Call again after delay
       setTimeout(() => {
-        recreateRulerInteractions(initTime);
+        recreateRulerInteractions(parentRulerInitTime);
       }, 700);
     }
     stopExpiredInteractions();
@@ -261,15 +261,23 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
 
       // Add ruler to the scene
       const ruler: Item[] = [];
+      let addItemsToScene = true;
       for (let rulerId of Object.values(rulerIds)) {
         for (let item of items) {
+          if (
+            item.id === rulerIds.label &&
+            isLabel(item) &&
+            item.text.plainText.startsWith("0")
+          ) {
+            addItemsToScene = false;
+          }
           if (item.id === rulerId) {
             ruler.push(item);
             break;
           }
         }
       }
-      OBR.scene.items.addItems(ruler);
+      if (addItemsToScene) OBR.scene.items.addItems(ruler);
 
       expireAllInteractions();
       stopExpiredInteractions();
