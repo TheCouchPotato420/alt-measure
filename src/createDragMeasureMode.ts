@@ -19,30 +19,14 @@ import { DRAG_MEASURE_MODE_ID, getItemId, TOOL_ID } from "./idStrings";
 import { Grid, Player, RulerIds } from "./types";
 import { buildRuler } from "./rulerBuilder";
 
+type TimeStampedInteractionManager = {
+  initTime: number;
+  manager: InteractionManager<Item[]>;
+};
+
 export function createDragMeasureMode(grid: Grid, player: Player) {
-  let itemInteraction: InteractionManager<Item[]> | null = null;
-  let dragStarted = false;
+  let interactions: TimeStampedInteractionManager[] = [];
   let currentRulerInitTime = 0;
-  let interactionIsExpired = false;
-
-  // Set flags to reset interactions
-  const expireAllInteractions = () => {
-    // Only expire interactions if the user has started a new drag
-    if (dragStarted) {
-      interactionIsExpired = true;
-    }
-  };
-
-  // Act on flags to reset interactions
-  const stopExpiredInteractions = () => {
-    if (itemInteraction && interactionIsExpired) {
-      itemInteraction[1]();
-      itemInteraction = null;
-      // initialInteractedItem = null;
-      dragStarted = false;
-      interactionIsExpired = false;
-    }
-  };
 
   // State that doesn't require extra handling
   let initialInteractedItem: Item | null = null;
@@ -59,12 +43,24 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
     endDot: getItemId("end-point", player.id),
   };
 
+  const endUnusedInteractions = () => {
+    const newItemInteractions: TimeStampedInteractionManager[] = [];
+    for (let i = 0; i < interactions.length; i++) {
+      if (currentRulerInitTime !== interactions[i].initTime) {
+        interactions[i].manager[1]();
+      } else {
+        newItemInteractions.push(interactions[i]);
+      }
+    }
+    interactions = newItemInteractions;
+  };
+
   const createRulerInteractions = async (event: ToolEvent) => {
-    const rulerInitTime = Date.now();
-    currentRulerInitTime = rulerInitTime;
+    const interactionStartTime = Date.now();
+    currentRulerInitTime = interactionStartTime;
     pointerPosition = event.pointerPosition;
-    dragStarted = true;
     OBR.scene.items.deleteItems(Object.values(rulerIds));
+    let interaction: InteractionManager<Item[]>;
 
     const token = event.target;
     if (token && isImage(token) && !token.locked) {
@@ -74,22 +70,21 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       rulerPoints = [];
       rulerPoints.push(startPosition);
 
-      [itemInteraction, sharedAttachments, localAttachments] =
-        await Promise.all([
-          OBR.interaction.startItemInteraction([
-            ...(await buildRuler(
-              rulerIds,
-              grid,
-              player,
-              [startPosition, await snapPosition(grid, pointerPosition)],
-              token.visible,
-              true
-            )),
-            token,
-          ]),
-          OBR.scene.items.getItemAttachments([token.id]),
-          OBR.scene.local.getItemAttachments([token.id]),
-        ]);
+      [interaction, sharedAttachments, localAttachments] = await Promise.all([
+        OBR.interaction.startItemInteraction([
+          ...(await buildRuler(
+            rulerIds,
+            grid,
+            player,
+            [startPosition, await snapPosition(grid, pointerPosition)],
+            token.visible,
+            true
+          )),
+          token,
+        ]),
+        OBR.scene.items.getItemAttachments([token.id]),
+        OBR.scene.local.getItemAttachments([token.id]),
+      ]);
     } else {
       initialInteractedItem = null;
       const startPosition = await snapPosition(grid, pointerPosition);
@@ -97,7 +92,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       rulerPoints = [];
       rulerPoints.push(startPosition);
 
-      [itemInteraction] = await Promise.all([
+      [interaction] = await Promise.all([
         OBR.interaction.startItemInteraction(
           await buildRuler(
             rulerIds,
@@ -111,18 +106,22 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       ]);
     }
 
+    interactions.push({ manager: interaction, initTime: interactionStartTime });
+
     // Because this function is asynchronous and contains await statements, interactions
     // may already be expired if the drag was short enough in duration
-    stopExpiredInteractions();
+    endUnusedInteractions();
 
     setTimeout(() => {
-      recreateRulerInteractions(rulerInitTime);
+      recreateRulerInteractions(interactionStartTime);
     }, 700);
   };
 
   const recreateRulerInteractions = async (parentRulerInitTime: number) => {
-    if (dragStarted && currentRulerInitTime === parentRulerInitTime) {
-      let newItemInteraction: InteractionManager<Item[]> | null = null;
+    if (currentRulerInitTime === parentRulerInitTime) {
+      const interactionStartTime = Date.now();
+      currentRulerInitTime = interactionStartTime;
+      let interactionManager: InteractionManager<Item[]> | null = null;
       rulerIds.label = getItemId("label", player.id) + Math.random();
 
       const endPointPosition = await calculateSegmentEndPosition(
@@ -133,7 +132,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       if (initialInteractedItem !== null) {
         const endPointItem = { ...initialInteractedItem };
         endPointItem.position = endPointPosition;
-        [newItemInteraction, sharedAttachments, localAttachments] =
+        [interactionManager, sharedAttachments, localAttachments] =
           await Promise.all([
             OBR.interaction.startItemInteraction([
               ...(await buildRuler(
@@ -150,7 +149,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
             OBR.scene.local.getItemAttachments([endPointItem.id]),
           ]);
       } else {
-        [newItemInteraction] = await Promise.all([
+        [interactionManager] = await Promise.all([
           OBR.interaction.startItemInteraction(
             await buildRuler(
               rulerIds,
@@ -164,18 +163,22 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
         ]);
       }
 
-      expireAllInteractions();
-      stopExpiredInteractions();
+      // TODO: interaction cleanup here
+      endUnusedInteractions();
 
-      dragStarted = true;
-      itemInteraction = newItemInteraction;
+      interactions.push({
+        initTime: interactionStartTime,
+        manager: interactionManager,
+      });
 
       // Call again after delay
       setTimeout(() => {
-        recreateRulerInteractions(parentRulerInitTime);
+        recreateRulerInteractions(interactionStartTime);
       }, 700);
+    } else {
+      console.log("ended");
     }
-    stopExpiredInteractions();
+    endUnusedInteractions();
   };
 
   OBR.tool.createMode({
@@ -210,7 +213,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       // OBR.player.deselect();
     },
     onKeyDown: async (_, event) => {
-      if (itemInteraction || true) {
+      if (interactions || true) {
         if (event.key === "z" || event.key === "Z") {
           // Add segment
           rulerPoints.push(
@@ -249,8 +252,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
           }
           OBR.scene.items.addItems(ruler);
 
-          expireAllInteractions();
-          stopExpiredInteractions();
+          endUnusedInteractions();
         }
       }
     },
@@ -279,13 +281,17 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
       }
       if (addItemsToScene) OBR.scene.items.addItems(ruler);
 
-      expireAllInteractions();
-      stopExpiredInteractions();
+      currentRulerInitTime = 0;
+      endUnusedInteractions();
     },
     onToolDragCancel: () => {
       // Fix bug where token is not locally displayed at its initial position on cancel
-      if (itemInteraction) {
-        itemInteraction[0](items => {
+      const manager = interactions.find(
+        value => value.initTime === currentRulerInitTime
+      )?.manager;
+
+      if (manager) {
+        manager[0](items => {
           items.forEach(item => {
             if (initialInteractedItem && item.id === initialInteractedItem.id)
               item.position = initialInteractedItem.position;
@@ -293,13 +299,13 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
         });
       }
 
-      expireAllInteractions();
-      stopExpiredInteractions();
+      currentRulerInitTime = 0;
+      endUnusedInteractions();
     },
   });
 
   async function updateInteractionTargetItems(pointerPosition: Vector2) {
-    if (itemInteraction && initialInteractedItem) {
+    if (interactions && initialInteractedItem) {
       const newPosition = await calculateSegmentEndPosition(
         grid,
         rulerPoints[rulerPoints.length - 1],
@@ -347,8 +353,11 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
     lastPosition = newPosition;
 
     let items: Item[] = [];
-    if (itemInteraction) {
-      items = itemInteraction[0](items => {
+    const manager = interactions.find(
+      value => value.initTime === currentRulerInitTime
+    )?.manager;
+    if (manager) {
+      items = manager[0](items => {
         items.forEach(item => {
           if (initialInteractedItem && item.id === initialInteractedItem.id) {
             item.position = newPosition;
