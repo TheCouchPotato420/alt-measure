@@ -214,7 +214,7 @@ export function createDragMeasureMode(grid: Grid, player: Player) {
     },
     onKeyDown: async (_, event) => {
       if (interactions || true) {
-        if (event.key === "z" || event.key === "Z") {
+        if (event.key === "c" || event.key === "C") {
           // Add segment
           rulerPoints.push(
             await calculateSegmentEndPosition(
