@@ -1,10 +1,10 @@
 {
-  "name": "Segmentable Ruler",
-  "version": "1.2.9",
+  "name": "Alternative pathing",
+  "version": "1.3.0",
   "manifest_version": 1,
-  "author": "Seamus Finlayson",
-  "homepage_url": "https://github.com/SeamusFinlayson/owlbear-measure",
-  "description": "A ruler for measuring segmented paths",
+  "author": "ABI",
+  "homepage_url": "https://github.com/TheCouchPotato420/alt-measure",
+  "description": "A ruler for measuring segmented paths that does not use the Z key",
   "icon": "/logo.svg",
   "background_url": "/"
 }
